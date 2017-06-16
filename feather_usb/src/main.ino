@@ -18,6 +18,21 @@ uint8_t serial_buffer_in[SERIAL_BUFFER_MAXSIZE];
 uint8_t serial_buffer_out[SERIAL_BUFFER_MAXSIZE];
 uint8_t serial_buffer_index = 0;
 
+uint8_t str_to_uint8(uint8_t *str)
+{
+    uint8_t high = *str, low = *(str+1);
+    
+    if (low >= '0' && low <= '9') low = low - '0';
+    else if (low >= 'a' && low <='f') low = low - 'a' + 10;
+    else if (low >= 'A' && low <='F') low = low - 'A' + 10;    
+   
+    if (high >= '0' && high <= '9') high = high - '0';
+    else if (high >= 'a' && high <='f') high = high - 'a' + 10;
+    else if (high >= 'A' && high <='F') high = high - 'A' + 10;    
+    
+    return (high << 4) | (low & 0xF); 
+}
+
 void setup() 
 {
     pinMode(RFM95_RST, OUTPUT);
@@ -48,24 +63,24 @@ void parse_serial_line(void)
     float freq = 0.0;
     uint16_t power = 0;
 
-    switch(serial_buffer_index)
+    switch(serial_buffer_in[0])
     {
-        case 's':
+        case 'S':
             pos = &serial_buffer_in[2];
 
             while(*pos != '\0')
             {
-                sscanf((const char*)pos, "%hhx", &current_buffer[i++]);
+                current_buffer[i++] = str_to_uint8(pos);
                 pos += 2;
             }
-            rf95.send(current_buffer, i-1);
+            rf95.send(current_buffer, i);
             rf95.waitPacketSent();
             break;
-        case 'f':
-            sscanf((char *)&serial_buffer_in[2], "%f", &freq);
+        case 'F':
+            freq = strtof((char *)&serial_buffer_in[2], NULL);
             rf95.setFrequency(freq);
             break;
-        case 'p':
+        case 'P':
             sscanf((char *)&serial_buffer_in[2], "%hu", &power);
             rf95.setTxPower(power, false);
             break;
@@ -76,21 +91,26 @@ void loop()
 {
     if( Serial.available() > 0 )
     {
-        serial_buffer_in[serial_buffer_index] = Serial.read();
-        if( serial_buffer_in[serial_buffer_index] == '\n')
+        serial_buffer_in[serial_buffer_index] = Serial.read(); 
+        
+        if( serial_buffer_in[serial_buffer_index] == '\r')
         {
             serial_buffer_in[serial_buffer_index] = '\0';
             parse_serial_line();
             serial_buffer_index = 0;
-        }
-        
-        if( serial_buffer_index == (SERIAL_BUFFER_MAXSIZE-1) )
-        {
-            serial_buffer_index = 0;
+            serial_buffer_in[serial_buffer_index] = '\0';
         }
         else
         {
-            serial_buffer_index++;
+        
+            if( serial_buffer_index == (SERIAL_BUFFER_MAXSIZE-1) )
+            {
+                serial_buffer_index = 0;
+            }
+            else
+            {
+                serial_buffer_index++;
+            }
         }
     }
 
@@ -107,7 +127,7 @@ void loop()
         {
             sprintf((char *)hex_char, "%02x", current_buffer[i]);
             strncat((char *)serial_buffer_out, (char *)hex_char, SERIAL_BUFFER_MAXSIZE);
-            Serial.println((char *)serial_buffer_out);
         }
+        Serial.println((char *)serial_buffer_out);
     }
 }
