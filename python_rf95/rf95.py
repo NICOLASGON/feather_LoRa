@@ -46,3 +46,7 @@ class RF95():
     def setPower(self, power):
         message = b'P ' + repr(power).encode('utf-8')
         self.protocol.write_line(message.decode('utf-8'))
+
+    def setSpreadingFactor(self, sf):
+        message = b'W ' + repr(sf).encode('utf-8')
+        self.protocol.write_line(message.decode('utf-8'))

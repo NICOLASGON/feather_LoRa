@@ -18,6 +18,8 @@ uint8_t serial_buffer_in[SERIAL_BUFFER_MAXSIZE];
 uint8_t serial_buffer_out[SERIAL_BUFFER_MAXSIZE];
 uint8_t serial_buffer_index = 0;
 
+RH_RF95::ModemConfig rf95_config = {.reg_1d=0x72 , .reg_1e=0x74 , .reg_26=0x00};
+
 uint8_t str_to_uint8(uint8_t *str)
 {
     uint8_t high = *str, low = *(str+1);
@@ -54,6 +56,7 @@ void setup()
         while (1);
   
     rf95.setTxPower(23, false);
+    rf95.setModemRegisters(&rf95_config);
 }
 
 void parse_serial_line(void)
@@ -62,6 +65,7 @@ void parse_serial_line(void)
     uint16_t i = 0;
     float freq = 0.0;
     uint16_t power = 0;
+    uint8_t spreading_factor = 0;
 
     switch(serial_buffer_in[0])
     {
@@ -84,6 +88,14 @@ void parse_serial_line(void)
             sscanf((char *)&serial_buffer_in[2], "%hu", &power);
             rf95.setTxPower(power, false);
             break;
+        case 'W':
+            spreading_factor = (uint8_t)atoi((char *)&serial_buffer_in[2]);
+            if( (spreading_factor >= 6) && (spreading_factor <= 12) )
+            {
+                rf95_config.reg_1e &= 0x0F;
+                rf95_config.reg_1e += (spreading_factor << 4);
+                rf95.setModemRegisters(&rf95_config);
+            }
     }
 }
 
