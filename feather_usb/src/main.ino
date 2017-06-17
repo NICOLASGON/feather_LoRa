@@ -93,7 +93,8 @@ void loop()
     {
         serial_buffer_in[serial_buffer_index] = Serial.read(); 
         
-        if( serial_buffer_in[serial_buffer_index] == '\r')
+        if( serial_buffer_in[serial_buffer_index] == '\r' ||
+            serial_buffer_in[serial_buffer_index] == '\n')
         {
             serial_buffer_in[serial_buffer_index] = '\0';
             parse_serial_line();
