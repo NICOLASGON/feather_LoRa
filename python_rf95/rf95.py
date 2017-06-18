@@ -50,3 +50,11 @@ class RF95():
     def setSpreadingFactor(self, sf):
         message = b'W ' + repr(sf).encode('utf-8')
         self.protocol.write_line(message.decode('utf-8'))
+
+    def setCodingRate(self, cr):
+        message = b'C ' + repr(cr).encode('utf-8')
+        self.protocol.write_line(message.decode('utf-8'))
+
+    def setBandwidth(self, bandwidth):
+        message = b'B ' + repr(bandwidth).encode('utf-8')
+        self.protocol.write_line(message.decode('utf-8'))

@@ -66,6 +66,9 @@ void parse_serial_line(void)
     float freq = 0.0;
     uint16_t power = 0;
     uint8_t spreading_factor = 0;
+    float bandwidth = 0;
+    uint8_t reg_bandwidth = 0;
+    uint8_t coding_rate = 0;
 
     switch(serial_buffer_in[0])
     {
@@ -96,6 +99,70 @@ void parse_serial_line(void)
                 rf95_config.reg_1e += (spreading_factor << 4);
                 rf95.setModemRegisters(&rf95_config);
             }
+            break;
+        case 'B':
+            bandwidth = strtof((char *)&serial_buffer_in[2], NULL);
+            if( bandwidth == 7.8 )
+            {
+                reg_bandwidth = 0b0000;
+            }
+            else if( bandwidth == 10.4 )
+            {
+                reg_bandwidth = 0b0001;
+            }
+            else if( bandwidth == 15.6 )
+            {
+                reg_bandwidth = 0b0010;
+            }
+            else if( bandwidth == 20.8 )
+            {
+                reg_bandwidth = 0b0011;
+            }
+            else if( bandwidth == 31.25 )
+            {
+                reg_bandwidth = 0b0100;
+            }
+            else if( bandwidth == 41.7 )
+            {
+                reg_bandwidth = 0b0101;
+            }
+            else if( bandwidth == 62.5 )
+            {
+                reg_bandwidth = 0b0110;
+            }
+            else if( bandwidth == 125.0 )
+            {
+                reg_bandwidth = 0b0111;
+            }
+            else if( bandwidth == 250.0 )
+            {
+                reg_bandwidth = 0b1000;
+            }
+            else if( bandwidth == 500.0 )
+            {
+                reg_bandwidth = 0b1001;
+            }
+            else 
+            {
+                reg_bandwidth = 0b1111;
+            }
+            if( reg_bandwidth != 0b1111 )
+            {
+                rf95_config.reg_1d &= 0x0F;
+                rf95_config.reg_1d += (reg_bandwidth << 4);
+                rf95.setModemRegisters(&rf95_config);
+            }
+            break;
+        case 'C':
+            coding_rate = (uint8_t)atoi((char *)&serial_buffer_in[2]);
+            if( (coding_rate >= 5) && (coding_rate <= 8) )
+            {
+                coding_rate -= 5;
+                rf95_config.reg_1d &= 0xF1;
+                rf95_config.reg_1d += (coding_rate << 1);
+                rf95.setModemRegisters(&rf95_config);
+            }
+            break;
     }
 }
 
